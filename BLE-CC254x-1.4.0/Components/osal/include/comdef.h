@@ -126,6 +126,8 @@ typedef uint32  uint24;
  */
 
 #define KEY_CHANGE                0xC0    // Key Events
+#define BLECOM_SYS_EVENT          0xC1
+#define BLECOM_DEV_EVENT          0xC2
 
 // OSAL System Message IDs/Events Reserved for applications (user applications)
 // 0xE0 – 0xFC
