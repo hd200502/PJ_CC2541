@@ -1159,7 +1159,7 @@
         <option>
           <name>Workseg Size</name>
           <version>0</version>
-          <state>8</state>
+          <state>0</state>
         </option>
         <option>
           <name>Constant Placement</name>
@@ -2239,7 +2239,7 @@
         <option>
           <name>Workseg Size</name>
           <version>0</version>
-          <state>8</state>
+          <state>0</state>
         </option>
         <option>
           <name>Constant Placement</name>
@@ -3107,7 +3107,7 @@
         </option>
         <option>
           <name>ExtraOutputFile</name>
-          <state>SimpleBLEPeripheral.sim</state>
+          <state>BleMotor.sim</state>
         </option>
         <option>
           <name>ExtraOutputFormat</name>
@@ -4409,7 +4409,7 @@
         <option>
           <name>Workseg Size</name>
           <version>0</version>
-          <state>8</state>
+          <state>0</state>
         </option>
         <option>
           <name>Constant Placement</name>
@@ -5076,7 +5076,7 @@
         </option>
         <option>
           <name>OutputFile</name>
-          <state>SimpleBLEPeripheral.d51</state>
+          <state>BleMotor.d51</state>
         </option>
         <option>
           <name>OutputFormat</name>
@@ -5278,7 +5278,7 @@
         </option>
         <option>
           <name>ExtraOutputFile</name>
-          <state>SimpleBLEPeripheral.sim</state>
+          <state>BleMotor.sim</state>
         </option>
         <option>
           <name>ExtraOutputFormat</name>

@@ -22,7 +22,7 @@
   its documentation for any purpose.
 
   YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
-  PROVIDED “AS IS?WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+  PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
   INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
   NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
   TEXAS INSTRUMENTS OR ITS LICENSORS BE LIABLE OR OBLIGATED UNDER CONTRACT,
@@ -274,108 +274,6 @@ static void DMAExecCrc(uint8 page, uint16 offset, uint16 len);
 static uint8 checkDL(void);
 #endif
 
-#ifdef OAD_EXT_SUPPORT
-#include "flash_w25q.h"
-#define OAD_FLASH_FILEID 0xffff
-#define OAD_SIGN_PG 7
-#define OAD_SIGN_OFFSET 0
-
-#define SECTOR_SIZE ((uint32)4096)
-#define OAD_IMG_ADDR_START (0*SECTOR_SIZE)
-
-void OADTarget_Set_Enable(void)
-{
-	uint8 status[] = {0x12,0x34,0x56,0x78};
-	uint16 addr = OAD_SIGN_PG * (HAL_FLASH_PAGE_SIZE / HAL_FLASH_WORD_SIZE) + OAD_SIGN_OFFSET / HAL_FLASH_WORD_SIZE;
-	
-	HalFlashErase(OAD_SIGN_PG);
-	HalFlashWrite(addr,(uint8 *)status,4);
-	
-	//HAL_SYSTEM_RESET();
-}
-
-
-static uint16 crcCalcDL_ex(void)
-{
-	uint8 block[OAD_BLOCK_SIZE];
-	uint16 blknum;
-	uint32 addr = OAD_IMG_ADDR_START;
-	uint8 idx;
-	uint16 blkmax = OAD_IMG_R_AREA * (HAL_FLASH_PAGE_SIZE / OAD_BLOCK_SIZE);// 14976;
-
-	HalCRCInit(0x0000);  // Seed thd CRC calculation with zero.
-
-	for(blknum = 0; blknum < oadBlkTot; blknum++)
-	{
-		SPI_FLASH_BufferRead((uint8 *)block, addr, OAD_BLOCK_SIZE);
-		addr += OAD_BLOCK_SIZE;
-	
-		if(blknum == 0)
-			idx = 4;
-		else
-			idx = 0;
-		
-		for (; idx < OAD_BLOCK_SIZE; idx++)
-		{
-			HalCRCExec(block[idx]);
-		}
-	}
-
-	for(; blknum < blkmax; blknum++)
-	{
-		for (idx = 0; idx < OAD_BLOCK_SIZE; idx++)
-		{
-			HalCRCExec(0xff);
-		}
-	}
-
-	return HalCRCCalc();
-	
-}
-
-uint8 checkDL_ex(void)
-{
-  uint16 crc[2];
-
-	SPI_FLASH_BufferRead((uint8 *)crc, OAD_IMG_ADDR_START,  sizeof(crc));
-	  
-  if ((crc[0] == 0xFFFF) || (crc[0] == 0x0000))
-  {
-	
-    return FALSE;
-  }
-
-  if (crc[1] == 0xFFFF)
-  {
-    crc[1] = crcCalcDL_ex();
-  }
-
-  return (crc[0] == crc[1]);
-}
-
-const uint8 InfoNoEnoughSpace[] = {0xFF, 0xFF, 0x01};
-const uint8 InfoCheckError[]    = {0xFF, 0xFF, 0x02};
-
-static void oadImgBlockReqInfo(uint16 connHandle, uint8 * data, uint8 len)
-{
-  uint16 value = GATTServApp_ReadCharCfg( connHandle, oadImgBlockConfig );
-
-  // If notifications enabled
-  if ( value & GATT_CLIENT_CFG_NOTIFY )
-  {
-    attHandleValueNoti_t noti;
-    gattAttribute_t *pAttr = GATTServApp_FindAttr(oadAttrTbl, GATT_NUM_ATTRS(oadAttrTbl),
-                                                  oadCharVals+OAD_CHAR_IMG_BLOCK);
-    noti.handle = pAttr->handle;
-    noti.len = len;
-	osal_memcpy(&noti.value[0], data, len);
-
-    VOID GATT_Notification(connHandle, &noti, FALSE);
-  }
-}
-
-
-#endif
 /*********************************************************************
  * @fn      OADTarget_AddService
  *
@@ -494,29 +392,6 @@ static bStatus_t oadImgIdentifyWrite( uint16 connHandle, uint8 *pValue )
 
   (void)osal_memcpy(rxHdr.uid, pValue+4, sizeof(rxHdr.uid));
 
-
-#ifdef OAD_EXT_SUPPORT
-	oadBlkTot = rxHdr.len / (OAD_BLOCK_SIZE / HAL_FLASH_WORD_SIZE);
-
-	if ((oadBlkTot <= OAD_BLOCK_MAX) && (oadBlkTot != 0) && ((osal_memcmp("AAAA",pValue+4,4) == TRUE) || (osal_memcmp("BBBB",pValue+4,4) == TRUE)))
-	{
-
-	  oadBlkNum = 0;
-	  oadImgBlockReq(connHandle, 0);
-	}
-	else
-	{
-		
-		ImgHdr.ver = (OAD_IMAGE_VERSION<<1);
-		ImgHdr.len = OAD_PG_SUM * (HAL_FLASH_PAGE_SIZE / HAL_FLASH_WORD_SIZE);
-		(void)osal_memcpy(ImgHdr.uid, "AAAA", sizeof(ImgHdr.uid));
-		
-		oadImgIdentifyReq(connHandle, &ImgHdr);
-		SPI_FLASH_BulkErase_ex();
-	}
-
-#else
-
   HalFlashRead(OAD_IMG_R_PAGE, OAD_IMG_HDR_OSET, (uint8 *)&ImgHdr, sizeof(img_hdr_t));
 
   oadBlkTot = rxHdr.len / (OAD_BLOCK_SIZE / HAL_FLASH_WORD_SIZE);
@@ -532,7 +407,6 @@ static bStatus_t oadImgIdentifyWrite( uint16 connHandle, uint8 *pValue )
   {
     oadImgIdentifyReq(connHandle, &ImgHdr);
   }
-#endif
 
   return ( SUCCESS );
 }
@@ -551,46 +425,6 @@ static bStatus_t oadImgBlockWrite( uint16 connHandle, uint8 *pValue )
 {
   uint16 blkNum = BUILD_UINT16( pValue[0], pValue[1] );
 
-#ifdef OAD_EXT_SUPPORT
-  
-  // make sure this is the image we're expecting
-  if ( blkNum == 0 )
-  {
-    uint16 ver = BUILD_UINT16( pValue[6], pValue[7] );
-    uint16 blkTot = BUILD_UINT16( pValue[8], pValue[9] ) / (OAD_BLOCK_SIZE / HAL_FLASH_WORD_SIZE);
-
-    if ( ( oadBlkNum != blkNum ) || ( oadBlkTot != blkTot ) )
-    {
-      return ( ATT_ERR_WRITE_NOT_PERMITTED );
-    }
-  }
-
-  if(oadBlkNum == blkNum)
-  {
-	  uint32 saddr = (uint32)oadBlkNum * OAD_BLOCK_SIZE + OAD_IMG_ADDR_START;
-	  
-	  SPI_FLASH_BufferWrite((pValue+2), saddr, OAD_BLOCK_SIZE);
-  	oadBlkNum++;
-  }
-
-  if (oadBlkNum == oadBlkTot)  // If the OAD Image is complete.
-  {
-	  //SPI_Flash_test2();  
-    if (checkDL_ex())
-    {
-      OADTarget_Set_Enable();
-      HAL_SYSTEM_RESET();
-    }
-
-    oadImgBlockReqInfo(connHandle, (uint8 *)InfoCheckError, sizeof(InfoCheckError));
-	
-  }
-  else  // Request the next OAD Image block.
-  {
-    oadImgBlockReq(connHandle, oadBlkNum);
-  }
-  
-#else
   // make sure this is the image we're expecting
   if ( blkNum == 0 )
   {
@@ -660,7 +494,6 @@ static bStatus_t oadImgBlockWrite( uint16 connHandle, uint8 *pValue )
   {
     oadImgBlockReq(connHandle, oadBlkNum);
   }
-#endif
 
   return ( SUCCESS );
 }
