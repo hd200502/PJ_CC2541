@@ -143,7 +143,7 @@
 /*********************************************************************
  * LOCAL VARIABLES
  */
-static uint8 simpleBLEPeripheral_TaskID;   // Task ID for internal task/event processing
+static uint8 BleMotor_TaskID;   // Task ID for internal task/event processing
 
 static gaprole_States_t gapProfileState = GAPROLE_INIT;
 
@@ -151,27 +151,16 @@ static gaprole_States_t gapProfileState = GAPROLE_INIT;
 static uint8 scanRspData[] =
 {
   // complete name
-  0x14,   // length of this data
+  0x09,   // length of this data
   GAP_ADTYPE_LOCAL_NAME_COMPLETE,
-  0x53,   // 'S'
-  0x69,   // 'i'
-  0x6d,   // 'm'
-  0x70,   // 'p'
-  0x6c,   // 'l'
-  0x65,   // 'e'
-  0x42,   // 'B'
-  0x4c,   // 'L'
-  0x45,   // 'E'
-  0x50,   // 'P'
-  0x65,   // 'e'
-  0x72,   // 'r'
-  0x69,   // 'i'
-  0x70,   // 'p'
-  0x68,   // 'h'
-  0x65,   // 'e'
-  0x72,   // 'r'
-  0x61,   // 'a'
-  0x6c,   // 'l'
+  'B',   // 'B'
+  'l',   // 'l'
+  'e',   // 'e'
+  'M',   // 'M'
+  'o',   // 'o'
+  't',   // 't'
+  'o',   // 'o'
+  'r',   // 'r'
 
   // connection interval range
   0x05,   // length of this data
@@ -208,7 +197,7 @@ static uint8 advertData[] =
 };
 
 // GAP GATT Attributes
-static uint8 attDeviceName[GAP_DEVICE_NAME_LEN] = "Simple BLE Peripheral";
+static uint8 attDeviceName[GAP_DEVICE_NAME_LEN] = "BleMotor";
 
 /*********************************************************************
  * LOCAL FUNCTIONS
@@ -256,7 +245,7 @@ static simpleProfileCBs_t simpleBLEPeripheral_SimpleProfileCBs =
  */
 
 /*********************************************************************
- * @fn      SimpleBLEPeripheral_Init
+ * @fn      BleMotor_Init
  *
  * @brief   Initialization function for the Simple BLE Peripheral App Task.
  *          This is called during initialization and should contain
@@ -269,9 +258,9 @@ static simpleProfileCBs_t simpleBLEPeripheral_SimpleProfileCBs =
  *
  * @return  none
  */
-void SimpleBLEPeripheral_Init( uint8 task_id )
+void BleMotor_Init( uint8 task_id )
 {
-  simpleBLEPeripheral_TaskID = task_id;
+  BleMotor_TaskID = task_id;
 
   // Setup the GAP
   VOID GAP_SetParamValue( TGAP_CONN_PAUSE_PERIPHERAL, DEFAULT_CONN_PAUSE_PERIPHERAL );
@@ -367,7 +356,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   SK_AddService( GATT_ALL_SERVICES ); // Simple Keys Profile
 
   // Register for all key events - This app will handle all key events
-  RegisterForKeys( simpleBLEPeripheral_TaskID );
+  RegisterForKeys( BleMotor_TaskID );
 
   // makes sure LEDs are off
   HalLedSet( (HAL_LED_1 | HAL_LED_2), HAL_LED_MODE_OFF );
@@ -421,12 +410,12 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
 #endif // defined ( DC_DC_P0_7 )
 
   // Setup a delayed profile startup
-  osal_set_event( simpleBLEPeripheral_TaskID, SBP_START_DEVICE_EVT );
+  osal_set_event( BleMotor_TaskID, SBP_START_DEVICE_EVT );
 
 }
 
 /*********************************************************************
- * @fn      SimpleBLEPeripheral_ProcessEvent
+ * @fn      BleMotor_ProcessEvent
  *
  * @brief   Simple BLE Peripheral Application Task event processor.  This function
  *          is called to process all events for the task.  Events
@@ -438,7 +427,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
  *
  * @return  events not processed
  */
-uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
+uint16 BleMotor_ProcessEvent( uint8 task_id, uint16 events )
 {
 
   VOID task_id; // OSAL required parameter that isn't used in this function
@@ -447,7 +436,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
   {
     uint8 *pMsg;
 
-    if ( (pMsg = osal_msg_receive( simpleBLEPeripheral_TaskID )) != NULL )
+    if ( (pMsg = osal_msg_receive( BleMotor_TaskID )) != NULL )
     {
       simpleBLEPeripheral_ProcessOSALMsg( (osal_event_hdr_t *)pMsg );
 
@@ -468,8 +457,12 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     VOID GAPBondMgr_Register( &simpleBLEPeripheral_BondMgrCBs );
 
     // Set timer for first periodic event
-    osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
+    osal_start_timerEx( BleMotor_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
 
+    {
+      uint8 adv_enable = TRUE;
+      GAPRole_SetParameter( GAPROLE_ADVERT_ENABLED, sizeof(uint8), &adv_enable );
+    }
     return ( events ^ SBP_START_DEVICE_EVT );
   }
 
@@ -478,7 +471,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     // Restart timer
     if ( SBP_PERIODIC_EVT_PERIOD )
     {
-      osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
+      osal_start_timerEx( BleMotor_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
     }
 
     // Perform periodic application task

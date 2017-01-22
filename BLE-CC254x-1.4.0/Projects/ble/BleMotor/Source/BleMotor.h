@@ -69,12 +69,12 @@ extern "C"
 /*
  * Task Initialization for the BLE Application
  */
-extern void SimpleBLEPeripheral_Init( uint8 task_id );
+extern void BleMotor_Init( uint8 task_id );
 
 /*
  * Task Event Processor for the BLE Application
  */
-extern uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events );
+extern uint16 BleMotor_ProcessEvent( uint8 task_id, uint16 events );
 
 /*********************************************************************
 *********************************************************************/
