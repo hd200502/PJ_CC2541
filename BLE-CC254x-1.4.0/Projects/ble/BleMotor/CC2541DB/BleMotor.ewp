@@ -6755,6 +6755,15 @@
       <name>$PROJ_DIR$\..\..\Include\gattservapp.h</name>
     </file>
     <file>
+      <name>$PROJ_DIR$\..\..\Profiles\OAD\oad.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\Profiles\OAD\oad_target.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\Profiles\OAD\oad_target.h</name>
+    </file>
+    <file>
       <name>$PROJ_DIR$\..\..\Profiles\Roles\peripheral.c</name>
     </file>
     <file>
